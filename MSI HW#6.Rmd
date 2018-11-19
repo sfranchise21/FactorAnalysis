@@ -1,0 +1,197 @@
+---
+title: "Multivariate Statistical Inference HW# 6"
+author: "Steven Francis"
+date: "April 19, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Problem 1
+
+```{r,echo=TRUE}
+fish.corr <- array(data = c(1.0000, 0.4919, 0.2636, 0.4653, 0.4919, 1.0000,
+                            0.3127, 0.3506, 0.2636, 0.3127, 1.0000, 0.4108,
+                            0.4653, 0.3506, 0.4108, 1.0000), dim = c(4,4),
+dimnames = list(c("x1","x2","x3","x4"),c("x1","x2","x3","x4")))
+
+fish.corr
+```
+
+# Part a
+
+```{r, echo=TRUE}
+#Obtaining the eigenvalues and eigenvectors of correlation matrix
+sp <- eigen(fish.corr)
+sp
+
+Gam <- sp$vectors
+Lamb <- diag(sp$values)
+
+#Reproducing R to check validity of eigenvalues and eigenvectors
+Gam %*% Lamb %*% t(Gam)
+```
+
+```{r,echo=TRUE}
+#Fitting the single factor model
+Q.hat <- (Gam %*% sqrt(Lamb))[,1]
+Q.hat
+
+Q.hat %*% t(Q.hat)
+
+Psi.hat <- diag(diag(fish.corr - Q.hat %*% t(Q.hat)))
+Psi.hat
+
+#To check the fit of the one-factor model
+round(fish.corr - (Q.hat %*% t(Q.hat) + Psi.hat), 6)
+```
+We have a single factor (k = 1) model that takes the form (y = qf + u) where:
+q.hat = (0.77, 0.74, 0.65, 0.77)' and psi.hat = diag(0.40, 0.45, 0.58, 0.41)
+
+# Part b
+
+```{r,echo=TRUE}
+factanal(covmat = fish.corr, factors = 1, rotation = "none")
+
+```
+We have a single factor (k = 1) model that takes the form (y = qf + u) where:
+q.hat = (0.71, 0.63, 0.49, 0.65)' and psi.hat = diag(0.50, 0.60, 0.76, 0.57)
+
+# Part c
+
+```{r,echo=TRUE}
+#Fitting the 2 factor model
+Q.hat <- (Gam %*% sqrt(Lamb))[,1:2]
+Q.hat
+
+#Communalities Calculation
+diag(Q.hat %*% t(Q.hat))
+
+Psi.hat <- diag(diag(fish.corr - Q.hat %*% t(Q.hat)))
+#Uniqueness
+diag(Psi.hat)
+
+#To check the fit of the two-factor model
+fish.corr - (Q.hat %*% t(Q.hat) + Psi.hat)
+
+#Variances accounted for by the two common factors are the first two eigenvalues
+diag(Lamb)[1:2]
+```
+The communalities range from about 0.63 to 0.88 and the specificities range between about 0.12 to 0.37
+
+We have a two factor (k = 2) model that takes the form (y = qf + u) where:
+q.hat = ((0.77, 0.74, 0.65, 0.77),(0.41, 0.37, -0.67, -0.19))' and 
+
+psi.hat11 = 0.24
+psi.hat22 = 0.32
+psi.hat33 = 0.12
+psi.hat44 = 0.37
+
+
+It seems as if the first factor loads pretty equally on all four variables and the second factor loads the Smallmouth and Largemouth bass variables (x3 and x4) in the opposite direction of the Bluegill and Black Crappie variables (x1 and x2). This could be due to the peak seasons for catching the types of bass being different than the peak seasons for catching Bluegill and Black Crappie species.
+
+```{r,echo=TRUE}
+#Creation of orthogonal matrix G to use in factor rotation
+G <- matrix(c(-1,-1,1,-1)/sqrt(2), 2,2)
+G
+
+#Rotation of factor loadings by 45 degrees
+Q.star <- Q.hat %*% G
+Q.star
+```
+Although there are no zeros, we have a couple of smallish loadings. We might interpret factor 1 as driving much of component 3 and a good portion of component 4 (Smallmouth and Largemouth Bass respectively), and factor 2 as driving much of components 1 and 2 (Bluegill and Black Crappie respectively).
+
+
+# Problem 2
+
+```{r,echo=TRUE}
+air.pollution.data <- read.csv("AirPollution.csv", header = T)
+air.pollution.data
+
+R <- cor(air.pollution.data)
+R
+```
+
+# Part a
+
+```{r,echo=TRUE}
+sp <- eigen(R)
+sp
+
+Gam <- sp$vectors
+Lamb <- diag(sp$values)
+
+Gam %*% Lamb %*% t(Gam)
+```
+
+```{r,echo=TRUE}
+#Fitting the single factor model
+Q.hat <- (Gam %*% sqrt(Lamb))[,1]
+Q.hat
+
+Q.hat %*% t(Q.hat)
+
+Psi.hat <- diag(diag(R - Q.hat %*% t(Q.hat)))
+Psi.hat
+
+R - (Q.hat %*% t(Q.hat) + Psi.hat)
+```
+We have a single factor (k = 1) model that takes the form (y = qf + u) where:
+q.hat = (0.563, -0.645, -0.476, -0.771)' and psi.hat = diag(0.682, 0.584, 0.772, 0.406)
+
+Proportion of total sample variance explained by single factor is:
+sum(Q.hat^2)/4 = 0.3889098
+
+# Part b
+
+```{r,echo=TRUE}
+factanal(air.pollution.data, factors = 1, rotation = "none")
+```
+We have a single factor (k = 1) model that takes the form (y = qf + u) where:
+q.hat = (-0.324, 0.410, 0.232, 0.771)' and psi.hat = diag(0.895, 0.832, 0.946, 0.405)
+
+
+# Part c
+Both methods return Q.hat values that show wind having a converse effect when compared to Solar radiation, NO_2, and O3. The psi.hat values (covariance matrix for u) are larger in the maximum likelihood factor analysis method than the principal component solution analysis method.
+
+Also the proportions of total variance explain was higher in the principal component solution analysis method (0.39) than the maximum likelihood factor analysis method (0.23).
+
+# Part d
+
+```{r,echo=TRUE}
+#Fitting the 2 factor model
+Q.hat <- (Gam %*% sqrt(Lamb))[,1:2]
+Q.hat
+
+#Varimax of Q.hat
+varimax(Q.hat)
+
+#Communalities Calculation
+diag(Q.hat %*% t(Q.hat))
+
+Psi.hat <- diag(diag(R - Q.hat %*% t(Q.hat)))
+#Uniqueness
+diag(Psi.hat)
+
+#To check the fit of the two-factor model
+R - (Q.hat %*% t(Q.hat) + Psi.hat)
+
+#Variances accounted for by the two common factors are the first two eigenvalues
+diag(Lamb)[1:2]
+```
+After performing a varimax rotation on the Q.hat matrix, the results show that factor 1 could be interpreted as being driven by the Solar radiation and O.3 variables, and factor 2 couble be interpreted as being driven by the NO.2 variable. Within both factors, Wind has a converse effect on the other pertinent variables.
+
+
+
+
+
+
+
+
+
+
+
+
+
